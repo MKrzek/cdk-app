@@ -1,5 +1,21 @@
 Resources:
-  HelloLambdaServiceRoleE071F162:
+  ToDoBackendTodoDatabase268AF11E:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoDatabase/Resource
+  ToDoBackendTodoHandlerServiceRoleA883E766:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -16,13 +32,42 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
     Metadata:
-      aws:cdk:path: CdkAppStack/HelloLambda/ServiceRole/Resource
-  HelloLambda3D9C82D6:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/ServiceRole/Resource
+  ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - ToDoBackendTodoDatabase268AF11E
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2
+      Roles:
+        - Ref: ToDoBackendTodoHandlerServiceRoleA883E766
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/ServiceRole/DefaultPolicy/Resource
+  ToDoBackendTodoHandler71E168A4:
     Type: AWS::Lambda::Function
     Properties:
       Code:
         S3Bucket:
-          Ref: AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627S3BucketB7EFBFEA
+          Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3Bucket8F2F8F64
         S3Key:
           Fn::Join:
             - ""
@@ -30,27 +75,27 @@ Resources:
                   - 0
                   - Fn::Split:
                       - "||"
-                      - Ref: AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627S3VersionKey8FF4C7A4
+                      - Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9
               - Fn::Select:
                   - 1
                   - Fn::Split:
                       - "||"
-                      - Ref: AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627S3VersionKey8FF4C7A4
+                      - Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9
       Role:
         Fn::GetAtt:
-          - HelloLambdaServiceRoleE071F162
+          - ToDoBackendTodoHandlerServiceRoleA883E766
           - Arn
       Environment:
         Variables:
-          isProduction: Not is not
-      Handler: hello.handler
-      MemorySize: 256
+          TABLE_NAME:
+            Ref: ToDoBackendTodoDatabase268AF11E
+      Handler: todoHandler.handler
       Runtime: nodejs12.x
-      Timeout: 10
     DependsOn:
-      - HelloLambdaServiceRoleE071F162
+      - ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2
+      - ToDoBackendTodoHandlerServiceRoleA883E766
     Metadata:
-      aws:cdk:path: CdkAppStack/HelloLambda/Resource
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/Resource
       aws:asset:path: /Users/malgorzatakrzek/cdk-app/lambda
       aws:asset:property: Code
   EndpointEEF1FD8F:
@@ -88,7 +133,7 @@ Resources:
       - EndpointEEF1FD8F
     Metadata:
       aws:cdk:path: CdkAppStack/Endpoint/Account
-  EndpointDeployment318525DA68f253de9a992139ef5865adf6b78cb3:
+  EndpointDeployment318525DAf19b2433816fc1fe17cf8446c3e4719f:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId:
@@ -106,7 +151,7 @@ Resources:
       RestApiId:
         Ref: EndpointEEF1FD8F
       DeploymentId:
-        Ref: EndpointDeployment318525DA68f253de9a992139ef5865adf6b78cb3
+        Ref: EndpointDeployment318525DAf19b2433816fc1fe17cf8446c3e4719f
       StageName: prod
     Metadata:
       aws:cdk:path: CdkAppStack/Endpoint/DeploymentStage.prod/Resource
@@ -128,7 +173,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName:
         Fn::GetAtt:
-          - HelloLambda3D9C82D6
+          - ToDoBackendTodoHandler71E168A4
           - Arn
       Principal: apigateway.amazonaws.com
       SourceArn:
@@ -153,7 +198,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName:
         Fn::GetAtt:
-          - HelloLambda3D9C82D6
+          - ToDoBackendTodoHandler71E168A4
           - Arn
       Principal: apigateway.amazonaws.com
       SourceArn:
@@ -191,7 +236,7 @@ Resources:
               - Ref: AWS::Region
               - :lambda:path/2015-03-31/functions/
               - Fn::GetAtt:
-                  - HelloLambda3D9C82D6
+                  - ToDoBackendTodoHandler71E168A4
                   - Arn
               - /invocations
     Metadata:
@@ -202,7 +247,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName:
         Fn::GetAtt:
-          - HelloLambda3D9C82D6
+          - ToDoBackendTodoHandler71E168A4
           - Arn
       Principal: apigateway.amazonaws.com
       SourceArn:
@@ -227,7 +272,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName:
         Fn::GetAtt:
-          - HelloLambda3D9C82D6
+          - ToDoBackendTodoHandler71E168A4
           - Arn
       Principal: apigateway.amazonaws.com
       SourceArn:
@@ -267,7 +312,7 @@ Resources:
               - Ref: AWS::Region
               - :lambda:path/2015-03-31/functions/
               - Fn::GetAtt:
-                  - HelloLambda3D9C82D6
+                  - ToDoBackendTodoHandler71E168A4
                   - Arn
               - /invocations
     Metadata:
@@ -275,20 +320,20 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAAE01P0U7DMAz8lr2n2cokeKUM8cREVb7ApF7J1iRV7DCqqP9OkzLok8+ns++ulOXuQe42j3ClQrWXbVTOo4zvDOoiKiLkGXbadqJBcsErFAdniX1QLA4nW4MHg4w+LW+Bh5Dpf/HJzvpWs3Z2Eskl9mA+WpDxJViV6KRZ4xq90UT5QIORsXF9fpTmJGhfQMpFMscTMOgOGK8wyviaX8/mXA36N8cNVkq5YFk849C70aDNQVdbKpp9FnCr8ASEovbue1yX+sNH5E/XJmpB0zQJ61qUZ9p+lXeyvJfl5kxaF3521wZls8wfrws7OHsBAAA=
+      Analytics: v2:deflate64:H4sIAAAAAAAAE02Q207EIBCGn2XvKdtqol5a13ilsam+wBTGym6BhoNrQ3h3gbqbXs038M8/h4aGpr6n9e4RzrZi/LRn2iANHw7YiRy0ss545sjhS3VgQKJDk5MerfaGYeak4sIJrSJp6oetV8gQ+KJAaj7Q8AnDVEoKRDKBHDjQ8OIVywb5a8sdGimsLdYCJA29XutL7PQk2FJ0hSKxtxVYi87SNgcCsxjB4RkWGl5LrzS3a2fxv8IFW8a0V4484zzpRaIqC2+ydI6xNF7hsv0T2DSG0b/L9h5XfkP3rXl+WilGsl73qihjZk+hxqx79272Liah0hzp0e5/mhva3NFmd7RCVCZNKSTSfo1/8XQHjr4BAAA=
     Metadata:
       aws:cdk:path: CdkAppStack/CDKMetadata/Default
     Condition: CDKMetadataAvailable
 Parameters:
-  AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627S3BucketB7EFBFEA:
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3Bucket8F2F8F64:
     Type: String
-    Description: S3 bucket for asset "e5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627"
-  AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627S3VersionKey8FF4C7A4:
+    Description: S3 bucket for asset "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9:
     Type: String
-    Description: S3 key for asset version "e5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627"
-  AssetParameterse5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627ArtifactHash98877790:
+    Description: S3 key for asset version "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275ArtifactHash86D00595:
     Type: String
-    Description: Artifact hash for asset "e5306d6740eefc1a5c00880e83644599e37de8be179fa6efcf30a17872e74627"
+    Description: Artifact hash for asset "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
 Outputs:
   Endpoint8024A810:
     Value:
