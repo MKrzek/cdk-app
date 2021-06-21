@@ -1,0 +1,423 @@
+Resources:
+  ToDoBackendTodoDatabase268AF11E:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoDatabase/Resource
+  ToDoBackendTodoHandlerServiceRoleA883E766:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/ServiceRole/Resource
+  ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - ToDoBackendTodoDatabase268AF11E
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2
+      Roles:
+        - Ref: ToDoBackendTodoHandlerServiceRoleA883E766
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/ServiceRole/DefaultPolicy/Resource
+  ToDoBackendTodoHandler71E168A4:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3Bucket8F2F8F64
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Fn::Select:
+                  - 0
+                  - Fn::Split:
+                      - "||"
+                      - Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9
+              - Fn::Select:
+                  - 1
+                  - Fn::Split:
+                      - "||"
+                      - Ref: AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9
+      Role:
+        Fn::GetAtt:
+          - ToDoBackendTodoHandlerServiceRoleA883E766
+          - Arn
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: ToDoBackendTodoDatabase268AF11E
+      Handler: todoHandler.handler
+      Runtime: nodejs12.x
+    DependsOn:
+      - ToDoBackendTodoHandlerServiceRoleDefaultPolicy18C513E2
+      - ToDoBackendTodoHandlerServiceRoleA883E766
+    Metadata:
+      aws:cdk:path: CdkAppStack/ToDoBackend/TodoHandler/Resource
+      aws:asset:path: /Users/malgorzatakrzek/cdk-app/lambda
+      aws:asset:property: Code
+  EndpointEEF1FD8F:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: Endpoint
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Resource
+  EndpointCloudWatchRoleC3C64E0F:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/CloudWatchRole/Resource
+  EndpointAccountB8304247:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - EndpointCloudWatchRoleC3C64E0F
+          - Arn
+    DependsOn:
+      - EndpointEEF1FD8F
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Account
+  EndpointDeployment318525DAf19b2433816fc1fe17cf8446c3e4719f:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: EndpointEEF1FD8F
+      Description: Automatically created by the RestApi construct
+    DependsOn:
+      - EndpointproxyANYC09721C5
+      - Endpointproxy39E2174E
+      - EndpointANY485C938B
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Deployment/Resource
+  EndpointDeploymentStageprodB78BEEA0:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: EndpointEEF1FD8F
+      DeploymentId:
+        Ref: EndpointDeployment318525DAf19b2433816fc1fe17cf8446c3e4719f
+      StageName: prod
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/DeploymentStage.prod/Resource
+  Endpointproxy39E2174E:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - EndpointEEF1FD8F
+          - RootResourceId
+      PathPart: "{proxy+}"
+      RestApiId:
+        Ref: EndpointEEF1FD8F
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/{proxy+}/Resource
+  EndpointproxyANYApiPermissionCdkAppStackEndpoint1AD78947ANYproxy51D04F69:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ToDoBackendTodoHandler71E168A4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: EndpointEEF1FD8F
+            - /
+            - Ref: EndpointDeploymentStageprodB78BEEA0
+            - /*/*
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/{proxy+}/ANY/ApiPermission.CdkAppStackEndpoint1AD78947.ANY..{proxy+}
+  EndpointproxyANYApiPermissionTestCdkAppStackEndpoint1AD78947ANYproxy4802EAF7:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ToDoBackendTodoHandler71E168A4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: EndpointEEF1FD8F
+            - /test-invoke-stage/*/*
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/{proxy+}/ANY/ApiPermission.Test.CdkAppStackEndpoint1AD78947.ANY..{proxy+}
+  EndpointproxyANYC09721C5:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      ResourceId:
+        Ref: Endpointproxy39E2174E
+      RestApiId:
+        Ref: EndpointEEF1FD8F
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ToDoBackendTodoHandler71E168A4
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/{proxy+}/ANY/Resource
+  EndpointANYApiPermissionCdkAppStackEndpoint1AD78947ANYDDEECC4D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ToDoBackendTodoHandler71E168A4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: EndpointEEF1FD8F
+            - /
+            - Ref: EndpointDeploymentStageprodB78BEEA0
+            - /*/
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/ANY/ApiPermission.CdkAppStackEndpoint1AD78947.ANY..
+  EndpointANYApiPermissionTestCdkAppStackEndpoint1AD78947ANY24949080:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ToDoBackendTodoHandler71E168A4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: EndpointEEF1FD8F
+            - /test-invoke-stage/*/
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/ANY/ApiPermission.Test.CdkAppStackEndpoint1AD78947.ANY..
+  EndpointANY485C938B:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: ANY
+      ResourceId:
+        Fn::GetAtt:
+          - EndpointEEF1FD8F
+          - RootResourceId
+      RestApiId:
+        Ref: EndpointEEF1FD8F
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ToDoBackendTodoHandler71E168A4
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: CdkAppStack/Endpoint/Default/ANY/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAAE02Q207EIBCGn2XvKdtqol5a13ilsam+wBTGym6BhoNrQ3h3gbqbXs038M8/h4aGpr6n9e4RzrZi/LRn2iANHw7YiRy0ss545sjhS3VgQKJDk5MerfaGYeak4sIJrSJp6oetV8gQ+KJAaj7Q8AnDVEoKRDKBHDjQ8OIVywb5a8sdGimsLdYCJA29XutL7PQk2FJ0hSKxtxVYi87SNgcCsxjB4RkWGl5LrzS3a2fxv8IFW8a0V4484zzpRaIqC2+ydI6xNF7hsv0T2DSG0b/L9h5XfkP3rXl+WilGsl73qihjZk+hxqx79272Liah0hzp0e5/mhva3NFmd7RCVCZNKSTSfo1/8XQHjr4BAAA=
+    Metadata:
+      aws:cdk:path: CdkAppStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Parameters:
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3Bucket8F2F8F64:
+    Type: String
+    Description: S3 bucket for asset "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275S3VersionKey053088D9:
+    Type: String
+    Description: S3 key for asset version "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
+  AssetParametersd3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275ArtifactHash86D00595:
+    Type: String
+    Description: Artifact hash for asset "d3ab1c8f55dc7be7610c392a732da903cf25183604f249abd38653fd29fa0275"
+Outputs:
+  Endpoint8024A810:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: EndpointEEF1FD8F
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: EndpointDeploymentStageprodB78BEEA0
+          - /
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+
